@@ -7,7 +7,7 @@
   },
   "dependencies": {
     "express": "^4.19.0",
-    "puppeteer": "^21.9.0",
+    "puppeteer": "21.9.0",
     "pg": "^8.11.3"
   }
 }
