@@ -1,33 +1,31 @@
-# render.yaml
 services:
-  # ────────────── Web API ──────────────
+  # Web API
   - type: web
     name: tiktok-trend-api
     env: node
     plan: free
-    # Install deps ➜ download Chrome ➜ continue
     buildCommand: |
       npm install
       npx puppeteer browsers install chrome
-    startCommand: "node index.js"
+    startCommand: node index.js
     envVars:
-      - key: DATABASE_URL         # wired automatically from the DB below
+      - key: DATABASE_URL
         fromDatabase:
           name: tiktok-db
           property: connectionString
-      - key: COOKIE               # optional TikTok session cookie
-        value: ""
+      - key: COOKIE
+        value: ""        # optional TikTok session cookie
 
-  # ────────────── Scheduled scraper ──────────────
-  - type: cron                    # cron needs Starter or higher
+  # Scheduled scraper (cron jobs require Starter plan or higher)
+  - type: cron
     name: tiktok-trend-cron
     env: node
-    plan: starter
+    plan: starter        # keep starter; cron can’t run on free
     buildCommand: |
       npm install
       npx puppeteer browsers install chrome
-    startCommand: "node cron.js"
-    schedule: "0 */3 * * *"       # every 3 hours
+    startCommand: node cron.js
+    schedule: "0 */3 * * *"   # every 3 hours
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -38,7 +36,6 @@ services:
       - key: COOKIE
         value: ""
 
-# ────────────── Postgres database ──────────────
 databases:
   - name: tiktok-db
     plan: free
