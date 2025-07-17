@@ -1,12 +1,15 @@
 services:
-  # Web API
+  # ────────────── Web API ──────────────
   - type: web
     name: tiktok-trend-api
     env: node
     plan: free
     buildCommand: |
+      # 1) regular deps (this installs puppeteer-core, NOT full puppeteer)
       npm install
-      npx puppeteer browsers install chrome
+
+      # 2) fetch Chromium into /opt/render/chrome  (outside slug)
+      npx puppeteer browsers install chrome --path /opt/render/chrome
     startCommand: node index.js
     envVars:
       - key: DATABASE_URL
@@ -14,18 +17,21 @@ services:
           name: tiktok-db
           property: connectionString
       - key: COOKIE
-        value: ""        # optional TikTok session cookie
+        value: ""
+      # tell Puppeteer where Chrome lives
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /opt/render/chrome/chrome/linux-*/chrome-linux64/chrome
 
-  # Scheduled scraper (cron jobs require Starter plan or higher)
+  # ────────────── Cron scraper ──────────────
   - type: cron
     name: tiktok-trend-cron
     env: node
-    plan: starter        # keep starter; cron can’t run on free
+    plan: starter
     buildCommand: |
       npm install
-      npx puppeteer browsers install chrome
+      npx puppeteer browsers install chrome --path /opt/render/chrome
     startCommand: node cron.js
-    schedule: "0 */3 * * *"   # every 3 hours
+    schedule: "0 */3 * * *"
     envVars:
       - key: DATABASE_URL
         fromDatabase:
@@ -35,6 +41,8 @@ services:
         value: "summer outfits,cleaning hacks,bible study"
       - key: COOKIE
         value: ""
+      - key: PUPPETEER_EXECUTABLE_PATH
+        value: /opt/render/chrome/chrome/linux-*/chrome-linux64/chrome
 
 databases:
   - name: tiktok-db
