@@ -1,0 +1,14 @@
+// package.json
+{
+  "name": "tiktok-trend-scraper",
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "dependencies": {
+    "express": "^4.19.0",
+    "puppeteer": "^22.5.0",
+    "pg": "^8.11.3"
+  }
+}
