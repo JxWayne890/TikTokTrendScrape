@@ -1,5 +1,6 @@
 # render.yaml
 services:
+  # ────────────── Web API ──────────────
   - type: web
     name: tiktok-trend-api
     env: node
@@ -7,13 +8,15 @@ services:
     buildCommand: "npm install"
     startCommand: "node index.js"
     envVars:
-      - key: DATABASE_URL   # auto-filled by Render Postgres add-on
+      - key: DATABASE_URL   # auto-wired from the DB below
         fromDatabase:
           name: tiktok-db
           property: connectionString
       - key: COOKIE         # optional TikTok session cookie
         value: ""
-  - type: worker
+
+  # ────────────── Scheduled scraper ──────────────
+  - type: cron            # NOTE: cron, not worker
     name: tiktok-trend-cron
     env: node
     plan: free
@@ -29,6 +32,7 @@ services:
         value: "summer outfits,cleaning hacks,bible study"
       - key: COOKIE
         value: ""
+
 databases:
   - name: tiktok-db
     plan: free
