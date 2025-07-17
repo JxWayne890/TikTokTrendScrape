@@ -1,26 +1,20 @@
-// index.js
 import express from "express";
-import { scrapeTikTok } from "./scraper.js";
 import pg from "pg";
+import { scrapeTikTok, scrapeSounds } from "./scraper.js";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const db = new pg.Pool({ connectionString: process.env.DATABASE_URL });
 
-/* ─── Database connection ─────────────────────────────── */
-const db = new pg.Pool({
-  connectionString: process.env.DATABASE_URL, // set in Render later
-});
-
-/* ─── REST endpoint ───────────────────────────────────── */
+/* ────────────────  Keyword trend endpoint  ──────────────── */
 app.get("/trends", async (req, res) => {
-  const { q } = req.query;           // ?q=keyword
+  const { q } = req.query;
   if (!q) return res.status(400).json({ error: "Missing q keyword" });
 
   try {
-    const results = await scrapeTikTok(q);
-
-    // save a snapshot for each video (optional but prepares for trend ranking)
-    for (const v of results) {
+    const videos = await scrapeTikTok(q);
+    // store snapshots
+    for (const v of videos) {
       await db.query(
         `INSERT INTO tiktok_snapshots
          (video_id, keyword, likes, comments, shares, posted_at)
@@ -29,11 +23,32 @@ app.get("/trends", async (req, res) => {
         [v.id, q, v.likes, v.comments, v.shares, v.postedAt]
       );
     }
-
-    res.json({ keyword: q, count: results.length, results });
+    res.json({ keyword: q, count: videos.length, results: videos });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: "Scrape failed" });
+  }
+});
+
+/* ────────────────  Trending sound endpoint  ──────────────── */
+app.get("/sounds", async (_req, res) => {
+  try {
+    const sounds = await scrapeSounds();
+    // upsert into DB
+    for (const s of sounds) {
+      await db.query(
+        `INSERT INTO trending_sounds (sound_id, title, artist, video_count, scraped_at)
+         VALUES ($1,$2,$3,$4,now())
+         ON CONFLICT (sound_id) DO UPDATE
+           SET video_count = EXCLUDED.video_count,
+               scraped_at  = EXCLUDED.scraped_at`,
+        [s.id, s.title, s.artist, s.uses]
+      );
+    }
+    res.json({ count: sounds.length, sounds });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: "Sound scrape failed" });
   }
 });
 
